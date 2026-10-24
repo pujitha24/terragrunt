@@ -249,6 +249,26 @@ func TestTFDependencyOutputInGenerateBlock(t *testing.T) {
 		"Should not fail with 'Unsuitable value type' error")
 }
 
+// TestTFDependencyOutputInIncludedGenerateBlock tests that a generate block in an exposed include can condition on
+// a dependency output declared by the including unit during `run --all`.
+//
+// See: https://github.com/gruntwork-io/terragrunt/issues/6831
+func TestTFDependencyOutputInIncludedGenerateBlock(t *testing.T) {
+	t.Parallel()
+
+	tmpEnvPath := helpers.CopyEnvironment(t, testFixtureDependencyGenerateInclude)
+	rootPath := filepath.Join(tmpEnvPath, testFixtureDependencyGenerateInclude)
+
+	helpers.CleanupTerraformFolder(t, rootPath)
+
+	_, stderr, err := helpers.RunTerragruntCommandWithOutput(
+		t,
+		"terragrunt run --all plan --non-interactive --working-dir "+rootPath,
+	)
+	require.NoError(t, err)
+	assert.NotContains(t, stderr, "Unsuitable value")
+}
+
 // TestTFDependencyOutputInGenerateBlockDirectRun tests that dependency outputs work when running directly
 // This test verifies that even in the broken version, running directly (without --all) works
 func TestTFDependencyOutputInGenerateBlockDirectRun(t *testing.T) {

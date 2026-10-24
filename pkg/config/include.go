@@ -100,6 +100,15 @@ func parseIncludedConfig(
 		return PartialParseConfigFile(ctx, l, v, pctx, includePath, includedConfig)
 	}
 
+	// A partial parse seeds an unknown placeholder for `dependency` so the config being partially decoded can reference
+	// outputs. Handing it to a full parse of an include with no dependency block makes any conditional on a dependency
+	// output (e.g. in a `generate` template) fail with "value must be known", so let the include resolve its own.
+	if len(pctx.PartialParseDecodeList) > 0 && pctx.DecodedDependencies != nil &&
+		!pctx.DecodedDependencies.IsWhollyKnown() {
+		pctx = pctx.Clone()
+		pctx.DecodedDependencies = nil
+	}
+
 	// When included config has dependencies, suppress diagnostics during parsing.
 	parseCtx := pctx
 	if hasDependency {
